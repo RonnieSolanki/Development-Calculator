@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSEYE — Development Loan Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #E24B4A;
+    --red-dark: #A32D2D;
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --green-dark: #0F6E56;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --amber-dark: #633806;
+    --gray-50: #F8F8F7;
+    --gray-100: #EFEFED;
+    --gray-200: #D3D1C7;
+    --gray-400: #888780;
+    --gray-700: #444441;
+    --gray-900: #1A1A18;
+    --border: rgba(0,0,0,0.12);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .page { max-width: 920px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-bar { width: 6px; height: 40px; background: var(--red); border-radius: 3px; flex-shrink: 0; }
+
+  .header h1 { font-size: 22px; font-weight: 600; color: var(--gray-900); }
+  .header p { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+  .kseye-logo {
+    margin-left: auto;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--red);
+  }
+
+  .card {
+    background: #fff;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+
+  @media (max-width: 640px) {
+    .grid3, .grid4 { grid-template-columns: 1fr 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; color: var(--gray-400); font-weight: 500; }
+
+  input[type=number], select {
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    font-size: 14px;
+    color: var(--gray-900);
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+
+  input[type=number]:focus, select:focus {
+    border-color: var(--red);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(226,75,74,0.1);
+  }
+
+  .warn-bar {
+    background: var(--amber-light);
+    color: var(--amber-dark);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 1rem;
+    display: none;
+    border-left: 3px solid var(--amber);
+  }
+
+  .results-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1rem; }
+  .checks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+  .bottom-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  @media (max-width: 640px) {
+    .results-grid { grid-template-columns: 1fr 1fr; }
+    .checks-grid { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+  }
+
+  .metric {
+    background: var(--gray-50);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+
+  .metric .lbl { font-size: 11px; color: var(--gray-400); margin-bottom: 5px; }
+  .metric .val { font-size: 18px; font-weight: 600; }
+  .metric .val.orange { color: var(--amber); }
+  .metric .val.green { color: var(--green); }
+  .metric .val.red { color: var(--red); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; margin-top: 6px;
+  }
+  .badge.pass { background: var(--green-light); color: var(--green-dark); }
+  .badge.fail { background: #FCEBEB; color: var(--red-dark); }
+  .badge-max { font-size: 11px; color: var(--gray-400); margin-left: 6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--gray-400); text-align: left; padding: 8px 12px;
+    border-bottom: 0.5px solid var(--border); background: var(--gray-50);
+  }
+  td { padding: 8px 12px; border-bottom: 0.5px solid var(--border); color: var(--gray-900); }
+  tr:last-child td { border-bottom: none; }
+  tr.build-row td { background: #F0FAF6; }
+  tr.build-row td:first-child { border-left: 3px solid var(--green); }
+  tr.total-row td { font-weight: 600; background: var(--gray-50); }
+
+  .table-wrap {
+    background: #fff;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
+
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--gray-400);
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-bar"></div>
+    <div>
+      <h1>Development Loan Calculator</h1>
+      <p>Heavy Refurbishment · Indicative figures only</p>
+    </div>
+    <div class="kseye-logo">KSEYE</div>
+  </div>
+
+  <div id="warn-bar" class="warn-bar"></div>
+
+  <div class="card">
+    <div class="section-title">Property details</div>
+    <div class="grid3">
+      <div class="field"><label>Market value (£)</label><input type="number" id="mv" value="535000" min="0"></div>
+      <div class="field"><label>Purchase price (£)</label><input type="number" id="pp" value="470000" min="0"></div>
+      <div class="field"><label>GDV (£)</label><input type="number" id="gdv" value="865000" min="0"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Build costs (£)</label><input type="number" id="bc" value="186000" min="0"></div>
+      <div class="field"><label>Purchased in last 12 months?</label>
+        <select id="recent"><option value="Y">Yes</option><option value="N">No</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Loan terms</div>
+    <div class="grid4">
+      <div class="field"><label>Interest rate (% / month)</label><input type="number" id="ir" value="0.94" step="0.01" min="0"></div>
+      <div class="field"><label>Loan term (months)</label><input type="number" id="lt" value="12" min="1" max="36"></div>
+      <div class="field"><label>Build period (months)</label><input type="number" id="bp" value="4" min="1"></div>
+      <div class="field"><label>Build starts from month</label><input type="number" id="bs" value="2" min="1"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Lending limits (approved)</div>
+    <div class="grid3">
+      <div class="field"><label>Max LTV Day 1 (%)</label><input type="number" id="maxltv" value="70" step="1" min="0" max="100"></div>
+      <div class="field"><label>Max LTGDV (%)</label><input type="number" id="maxltgdv" value="75" step="1" min="0" max="100"></div>
+      <div class="field"><label>Max LTC (%)</label><input type="number" id="maxltc" value="90" step="1" min="0" max="100"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Fees</div>
+    <div class="grid4">
+      <div class="field"><label>Arrangement fee (%)</label><input type="number" id="af" value="1" step="0.1" min="0"></div>
+      <div class="field"><label>Broker fee (%)</label><input type="number" id="bf" value="0" step="0.1" min="0"></div>
+      <div class="field"><label>CHAPS fee (£)</label><input type="number" id="chaps" value="36" min="0"></div>
+      <div class="field"><label>Title insurance</label>
+        <select id="ti"><option value="Y">Yes</option><option value="N">No</option></select>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="card">
+    <div class="section-title">Loan summary</div>
+    <div class="results-grid" id="results-top"></div>
+
+    <div class="section-title" style="margin-top:1rem;">Limit checks</div>
+    <div class="checks-grid" id="checks-grid"></div>
+
+    <hr class="divider">
+    <div class="section-title">Fees &amp; net release</div>
+    <div class="bottom-grid" id="results-bottom"></div>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem 0.75rem;">
+      <div class="section-title" style="margin-bottom:0">Drawdown schedule</div>
+    </div>
+    <div class="table-wrap" style="border:none; border-radius:0; margin:0;">
+      <table>
+        <thead><tr>
+          <th>Month</th>
+          <th>Build month</th>
+          <th>Drawdown (£)</th>
+          <th>Rolled interest (£)</th>
+          <th>Cumulative loan (£)</th>
+        </tr></thead>
+        <tbody id="dd-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    KSEYE Capital · Development Loan Calculator · Indicative figures only — not a formal offer of finance
+  </div>
+
+</div>
+
+<script>
+  function fmt(n){ return Math.round(n).toLocaleString('en-GB'); }
+  function pct(n){ return (n*100).toFixed(2) + '%'; }
+
+  function calc(){
+    const mv    = +document.getElementById('mv').value || 0;
+    const pp    = +document.getElementById('pp').value || 0;
+    const gdv   = +document.getElementById('gdv').value || 0;
+    const bc    = +document.getElementById('bc').value || 0;
+    const recent= document.getElementById('recent').value;
+    const ir    = (+document.getElementById('ir').value || 0) / 100;
+    const lt    = +document.getElementById('lt').value || 12;
+    const bp    = +document.getElementById('bp').value || 4;
+    const bs    = +document.getElementById('bs').value || 2;
+    const maxltv  = (+document.getElementById('maxltv').value || 70) / 100;
+    const maxltgdv= (+document.getElementById('maxltgdv').value || 75) / 100;
+    const maxltc  = (+document.getElementById('maxltc').value || 90) / 100;
+    const af    = (+document.getElementById('af').value || 0) / 100;
+    const bf    = (+document.getElementById('bf').value || 0) / 100;
+    const chaps = +document.getElementById('chaps').value || 0;
+    const tiOn  = document.getElementById('ti').value === 'Y';
+
+    const baseVal  = recent === 'Y' ? Math.min(mv, pp) : mv;
+    const day1Gross= baseVal * maxltv;
+    const drawPerMonth = bp > 0 ? bc / bp : 0;
+
+    let totalRolledInterest = 0;
+    let rows = [];
+    let cumLoan = day1Gross;
+
+    for(let m = 1; m <= lt; m++){
+      let dd = 0, buildMonth = null;
+      if(m >= bs && m < bs + bp){ dd = drawPerMonth; buildMonth = m - bs + 1; }
+      const rolledInt = cumLoan * ir;
+      totalRolledInterest += rolledInt;
+      cumLoan += dd + rolledInt;
+      rows.push({ m, buildMonth, dd, rolledInt, cumLoan });
+    }
+
+    const totalGross = day1Gross + bc + totalRolledInterest;
+    const titleFee   = tiOn ? 687 : 0;
+    const arrFee     = day1Gross * af;
+    const brokerFee  = day1Gross * bf;
+    const netDay1    = day1Gross - titleFee - arrFee - brokerFee - chaps;
+    const maxFacility= totalGross + titleFee + arrFee + brokerFee + chaps;
+    const totalCost  = pp + bc;
+
+    const ltvVal  = mv > 0 ? day1Gross / mv : 0;
+    const ltgdvVal= gdv > 0 ? totalGross / gdv : 0;
+    const ltcVal  = totalCost > 0 ? totalGross / totalCost : 0;
+
+    const ltvPass  = ltvVal  <= maxltv;
+    const ltgdvPass= ltgdvVal<= maxltgdv;
+    const ltcPass  = ltcVal  <= maxltc;
+
+    const warns = [];
+    if(!ltvPass)   warns.push('LTV exceeds limit ('+pct(ltvVal)+' vs max '+pct(maxltv)+')');
+    if(!ltgdvPass) warns.push('LTGDV exceeds limit ('+pct(ltgdvVal)+' vs max '+pct(maxltgdv)+')');
+    if(!ltcPass)   warns.push('LTC exceeds limit ('+pct(ltcVal)+' vs max '+pct(maxltc)+')');
+    const wb = document.getElementById('warn-bar');
+    if(warns.length){ wb.style.display='block'; wb.innerHTML='<strong>⚠ Limit breach:</strong> '+warns.join(' · '); }
+    else { wb.style.display='none'; }
+
+    document.getElementById('results-top').innerHTML = `
+      <div class="metric"><div class="lbl">Max day 1 gross loan</div><div class="val orange">£${fmt(day1Gross)}</div></div>
+      <div class="metric"><div class="lbl">Estimated rolled interest</div><div class="val orange">£${fmt(totalRolledInterest)}</div></div>
+      <div class="metric"><div class="lbl">Total gross loan</div><div class="val orange">£${fmt(totalGross)}</div></div>
+      <div class="metric"><div class="lbl">Maximum facility</div><div class="val orange">£${fmt(maxFacility)}</div></div>
+    `;
+
+    function badge(pass){ return `<span class="badge ${pass?'pass':'fail'}">${pass?'✓ Pass':'✗ Fail'}</span>`; }
+    document.getElementById('checks-grid').innerHTML = `
+      <div class="metric">
+        <div class="lbl">LTV — Day 1 loan / Market value</div>
+        <div class="val ${ltvPass?'green':'red'}">${pct(ltvVal)}</div>
+        ${badge(ltvPass)}<span class="badge-max">max ${pct(maxltv)}</span>
+      </div>
+      <div class="metric">
+        <div class="lbl">LTGDV — Total loan / GDV</div>
+        <div class="val ${ltgdvPass?'green':'red'}">${pct(ltgdvVal)}</div>
+        ${badge(ltgdvPass)}<span class="badge-max">max ${pct(maxltgdv)}</span>
+      </div>
+      <div class="metric">
+        <div class="lbl">LTC — Total loan / Total cost</div>
+        <div class="val ${ltcPass?'green':'red'}">${pct(ltcVal)}</div>
+        ${badge(ltcPass)}<span class="badge-max">max ${pct(maxltc)}</span>
+      </div>
+    `;
+
+    let tbody = '';
+    rows.forEach(r => {
+      const isBuild = r.buildMonth !== null;
+      tbody += `<tr class="${isBuild?'build-row':''}">
+        <td>${r.m}</td>
+        <td>${r.buildMonth !== null ? r.buildMonth : '—'}</td>
+        <td>${r.dd > 0 ? fmt(r.dd) : '—'}</td>
+        <td style="color:#888780">${fmt(r.rolledInt)}</td>
+        <td style="font-weight:600">${fmt(r.cumLoan)}</td>
+      </tr>`;
+    });
+    tbody += `<tr class="total-row">
+      <td colspan="2">Total</td>
+      <td>£${fmt(bc)}</td>
+      <td style="color:#888780">£${fmt(totalRolledInterest)}</td>
+      <td>£${fmt(totalGross)}</td>
+    </tr>`;
+    document.getElementById('dd-body').innerHTML = tbody;
+
+    document.getElementById('results-bottom').innerHTML = `
+      <div class="metric"><div class="lbl">Title insurance fee</div><div class="val">£${fmt(titleFee)}</div></div>
+      <div class="metric"><div class="lbl">Net day 1 release</div><div class="val green">£${fmt(netDay1)}</div></div>
+    `;
+  }
+
+  document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calc));
+  calc();
+</script>
+</body>
+</html>
